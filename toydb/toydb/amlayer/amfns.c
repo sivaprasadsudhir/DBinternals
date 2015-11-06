@@ -234,13 +234,7 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 }
 
 /* Creates a secondary idex file called fileName.indexNo */
-AM_CreateIndex(fileName,indexNo,attrType,attrLength)
-char *fileName;/* Name of indexed file */
-int indexNo;/*number of this index for file */
-char attrType;/* 'c' for char ,'i' for int ,'f' for float */
-int attrLength; /* 4 for 'i' or 'f', 1-255 for 'c' */
-
-
+AM_CreateIndex(char* fileName,int indexNo,char attrType,int attrLength)
 {
 	char *pageBuf; /* buffer for holding a page */
 	char indexfName[AM_MAX_FNAME_LENGTH]; /* String to store the indexed
@@ -322,10 +316,7 @@ int attrLength; /* 4 for 'i' or 'f', 1-255 for 'c' */
 
 
 /* Destroys the index fileName.indexNo */
-AM_DestroyIndex(fileName,indexNo)
-char *fileName;/* name of indexed file */
-int indexNo; /* number of this index for file */
-
+AM_DestroyIndex(char* fileName,int indexNo)
 {
 	char indexfName[AM_MAX_FNAME_LENGTH];
 	int errVal;
@@ -339,13 +330,7 @@ int indexNo; /* number of this index for file */
 
 /* Deletes the recId from the list for value and deletes value if list
 becomes empty */
-AM_DeleteEntry(fileDesc,attrType,attrLength,value,recId)
-int fileDesc; /* file Descriptor */
-char attrType; /* 'c' , 'i' or 'f' */
-int attrLength; /* 4 for 'i' or 'f' , 1-255 for 'c' */
-char *value;/* Value of key whose corr recId is to be deleted */
-int recId; /* id of the record to delete */
-
+AM_DeleteEntry(int fileDesc,char attrType,int attrLength,char* value,int recId)
 {
 	char *pageBuf;/* buffer to hold the page */
 	int pageNum; /* page Number of the page in buffer */
@@ -473,13 +458,7 @@ int recId; /* id of the record to delete */
 
 
 /* Inserts a value,recId pair into the tree */
-AM_InsertEntry(fileDesc,attrType,attrLength,value,recId)
-int fileDesc; /* file Descriptor */
-char attrType; /* 'i' or 'c' or 'f' */
-int attrLength; /* 4 for 'i' or 'f', 1-255 for 'c' */
-char *value; /* value to be inserted */ 
-int recId; /* recId to be inserted */
-
+AM_InsertEntry(int fileDesc,char attrType,int attrLength,char value,int recId)
 {
 	char *pageBuf; /* buffer to hold page */
 	int pageNum; /* page number of the page in buffer */

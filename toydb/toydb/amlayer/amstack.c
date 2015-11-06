@@ -12,11 +12,8 @@ struct
 
 int AM_topofStackPtr = -1;
 
-AM_PushStack(pageNum,offset)
-int pageNum;
-int offset;
-
-{
+AM_PushStack(int pageNum,int offset)
+	{
 AM_topofStackPtr++;
 AM_Stack[AM_topofStackPtr].pageNumber  = pageNum;
 AM_Stack[AM_topofStackPtr].offset  = offset;
@@ -28,9 +25,7 @@ AM_PopStack()
 AM_topofStackPtr--;
 }
 
-AM_topofStack(pageNum,offset)
-int *pageNum;
-int *offset;
+AM_topofStack(int* pageNum,int* offset)
 {
 *pageNum = AM_Stack[AM_topofStackPtr].pageNumber ;
 *offset = AM_Stack[AM_topofStackPtr].offset ;

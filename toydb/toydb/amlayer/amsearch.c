@@ -2,97 +2,48 @@
 # include "am.h"
 # include "pf.h"
 
-/* searches for a key in a binary tree - returns FOUND or NOTFOUND and
-returns the pagenumber and the offset where key is present or could 
-be inserted */
-AM_Search(fileDesc,attrType,attrLength,value,pageNum,pageBuf,indexPtr)
-int fileDesc;
-char attrType;
-int attrLength;
-char *value;
-int *pageNum; /* page number of page where key is present or can be inserted*/
-char **pageBuf; /* pointer to buffer in memory where leaf page corresponding                                                        to pageNum can be found */
-int *indexPtr; /* pointer to index in leaf where key is present or 
-                                                            can be inserted */
+
+
+/* Compare value in bufPtr with value in valPtr - returns -1 ,0 or 1 according
+to whether value in valPtr is less than , equal to or greater than value 
+in BufPtr*/
+AM_Compare(char* bufPtr,char attrType,int attrLength,char* valPtr)
 
 {
-	int errVal;
-	int nextPage; /* next page to be followed on the path from root to leaf*/
-	int retval; /* return value */
-	AM_LEAFHEADER lhead,*lheader; /* local pointer to leaf header */
-	AM_INTHEADER ihead,*iheader; /* local pointer to internal node header */
+	int bufint,valint;/* temporary aligned storage for comparison */
+	float buffloat,valfloat;/* temporary aligned storage for comparison */
 
-        /* initialise the headeers */	
-	lheader = &lhead;
-	iheader = &ihead;
-
-        /* get the root of the B+ tree */
-
-	errVal = PF_GetFirstPage(fileDesc,pageNum,pageBuf);
-	AM_Check;
-	if (**pageBuf == 'l' ) 
-		/* if root is a leaf page */
+	switch(attrType)
 	{
-		bcopy(*pageBuf,lheader,AM_sl);
-		if (lheader->attrLength != attrLength)
-			return(AME_INVALIDATTRLENGTH);
-		
-	}
-	else /* root is not a leaf */
-	{
-		bcopy(*pageBuf,iheader,AM_sint);
-		if (iheader->attrLength != attrLength)
-			return(AME_INVALIDATTRLENGTH);
-	}
-	/* find the leaf at which key is present or can be inserted */
-	while ((**pageBuf) != 'l')
-	{
-		/* find the next page to be followed */
-		nextPage = AM_BinSearch(*pageBuf,attrType,attrLength,value,
-					indexPtr,iheader);
-
-		/* push onto stack for backtracking and splitting nodes if 
-		needed later */
-		AM_PushStack(*pageNum,*indexPtr);
-
-		errVal = PF_UnfixPage(fileDesc,*pageNum,FALSE);
-		AM_Check;
-
-		/* set pageNum to the next page to be followed */
-		*pageNum = nextPage;
-
-		/* Get the next page to be followed */
-		errVal = PF_GetThisPage(fileDesc,*pageNum,pageBuf);
-		AM_Check;
-
-		if (**pageBuf == 'l' ) 
+	case 'i' : 
 		{
-			/* if next page is a leaf */
-			bcopy(*pageBuf,lheader,AM_sl);
-			if (lheader->attrLength != attrLength)
-				return(AME_INVALIDATTRLENGTH);
+			bcopy(bufPtr,(char *)&bufint,AM_si);
+			bcopy(valPtr,(char *)&valint,AM_si);
+			if (valint < bufint) return(-1);
+			else if (valint > bufint) return(1);
+			else return(0);
 		}
-		else
+	case 'f' : 
 		{
-			/* if next page is an internal node */
-			bcopy(*pageBuf,iheader,AM_sint);
-			if (iheader->attrLength != attrLength)
-				return(AME_INVALIDATTRLENGTH);
+			bcopy(bufPtr,(char *)&buffloat,AM_sf);
+			bcopy(valPtr,(char *)&valfloat,AM_sf);
+			if (valfloat < buffloat) return(-1);
+			else if (valfloat > buffloat) return(1);
+			else return(0);
+		}
+	case 'c' : 
+		{
+			return(strncmp(valPtr,bufPtr,attrLength));
 		}
 	}
-	/* find whether key is in leaf or not */
-	return(AM_SearchLeaf(*pageBuf,attrType,attrLength,value,indexPtr,lheader));
 }
 
 
+
+
 /* Finds the place (index) from where the next page to be followed is got*/
-AM_BinSearch(pageBuf,attrType,attrLength,value,indexPtr,header)
-char *pageBuf; /* buffer where the page is found */
-char attrType; 
-int attrLength;
-char *value; /* attribute value for which search is called */
-int *indexPtr;  
-AM_INTHEADER *header;
+AM_BinSearch(char* pageBuf,char attrType,int attrLength,char* value,int* indexPtr,AM_INTHEADER* header)
+
 
 {
 	int low,high,mid; /* for binary search */
@@ -174,17 +125,9 @@ AM_INTHEADER *header;
 
 }
 
-
-
 /* search a leaf node for the key- returns the place where it is found or can
 be inserted */
-AM_SearchLeaf(pageBuf,attrType,attrLength,value,indexPtr,header)
-char *pageBuf; /* buffer where the leaf page resides */
-char attrType;
-int attrLength;
-char *value; /* attribute value to be compared with */
-int *indexPtr;/* pointer to the index where key is found or can be inserted */
-AM_LEAFHEADER *header;
+AM_SearchLeaf(char* pageBuf,char attrType,int attrLength,char* value,int* indexPtr,AM_LEAFHEADER* header)
 
 
 {
@@ -288,43 +231,84 @@ AM_LEAFHEADER *header;
 
 
 
-/* Compare value in bufPtr with value in valPtr - returns -1 ,0 or 1 according
-to whether value in valPtr is less than , equal to or greater than value 
-in BufPtr*/
-AM_Compare(bufPtr,attrType,attrLength,valPtr)
-char *bufPtr;
-char attrType;
-char *valPtr;
-int attrLength;
+/* searches for a key in a binary tree - returns FOUND or NOTFOUND and
+returns the pagenumber and the offset where key is present or could 
+be inserted */
+AM_Search(int fileDesc,char attrType,int attrLength,char* value,int* pageNum,char** pageBuf,int* indexPtr)
 
 {
-	int bufint,valint;/* temporary aligned storage for comparison */
-	float buffloat,valfloat;/* temporary aligned storage for comparison */
+	int errVal;
+	int nextPage; /* next page to be followed on the path from root to leaf*/
+	int retval; /* return value */
+	AM_LEAFHEADER lhead,*lheader; /* local pointer to leaf header */
+	AM_INTHEADER ihead,*iheader; /* local pointer to internal node header */
 
-	switch(attrType)
+        /* initialise the headeers */	
+	lheader = &lhead;
+	iheader = &ihead;
+
+        /* get the root of the B+ tree */
+
+	errVal = PF_GetFirstPage(fileDesc,pageNum,pageBuf);
+	AM_Check;
+	if (**pageBuf == 'l' ) 
+		/* if root is a leaf page */
 	{
-	case 'i' : 
+		bcopy(*pageBuf,lheader,AM_sl);
+		if (lheader->attrLength != attrLength)
+			return(AME_INVALIDATTRLENGTH);
+		
+	}
+	else /* root is not a leaf */
+	{
+		bcopy(*pageBuf,iheader,AM_sint);
+		if (iheader->attrLength != attrLength)
+			return(AME_INVALIDATTRLENGTH);
+	}
+	/* find the leaf at which key is present or can be inserted */
+	while ((**pageBuf) != 'l')
+	{
+		/* find the next page to be followed */
+		nextPage = AM_BinSearch(*pageBuf,attrType,attrLength,value,
+					indexPtr,iheader);
+
+		/* push onto stack for backtracking and splitting nodes if 
+		needed later */
+		AM_PushStack(*pageNum,*indexPtr);
+
+		errVal = PF_UnfixPage(fileDesc,*pageNum,FALSE);
+		AM_Check;
+
+		/* set pageNum to the next page to be followed */
+		*pageNum = nextPage;
+
+		/* Get the next page to be followed */
+		errVal = PF_GetThisPage(fileDesc,*pageNum,pageBuf);
+		AM_Check;
+
+		if (**pageBuf == 'l' ) 
 		{
-			bcopy(bufPtr,(char *)&bufint,AM_si);
-			bcopy(valPtr,(char *)&valint,AM_si);
-			if (valint < bufint) return(-1);
-			else if (valint > bufint) return(1);
-			else return(0);
+			/* if next page is a leaf */
+			bcopy(*pageBuf,lheader,AM_sl);
+			if (lheader->attrLength != attrLength)
+				return(AME_INVALIDATTRLENGTH);
 		}
-	case 'f' : 
+		else
 		{
-			bcopy(bufPtr,(char *)&buffloat,AM_sf);
-			bcopy(valPtr,(char *)&valfloat,AM_sf);
-			if (valfloat < buffloat) return(-1);
-			else if (valfloat > buffloat) return(1);
-			else return(0);
-		}
-	case 'c' : 
-		{
-			return(strncmp(valPtr,bufPtr,attrLength));
+			/* if next page is an internal node */
+			bcopy(*pageBuf,iheader,AM_sint);
+			if (iheader->attrLength != attrLength)
+				return(AME_INVALIDATTRLENGTH);
 		}
 	}
+	/* find whether key is in leaf or not */
+	return(AM_SearchLeaf(*pageBuf,attrType,attrLength,value,indexPtr,lheader));
 }
+
+
+
+
+
 
 
 

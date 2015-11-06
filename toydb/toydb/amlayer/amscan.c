@@ -22,14 +22,7 @@ struct {
 
 
 /* Opens an index scan */
-AM_OpenIndexScan(fileDesc,attrType,attrLength,op,value)
-int fileDesc; /* file Descriptor */
-
-char attrType; /* 'i' or 'c' or 'f' */
-int attrLength; /* 4 for 'i' or 'f' , 1-255 for 'c' */
-int op; /* operator for comparison */
-char *value; /* value for comparison */
-
+AM_OpenIndexScan(int fileDesc,char attrType,int attrLength,int op,char* value)
 {
 int scanDesc; /* index into scan table */
 int status; /* whether value is found or not in the tree */
@@ -277,8 +270,7 @@ return(scanDesc);
 
 /* returns the record id of the next record that satisfies the conditions
 specified for index scan associated with scanDesc */
-AM_FindNextEntry(scanDesc)
-int scanDesc;/* index scan descriptor */
+AM_FindNextEntry(int scanDesc)
 
 {
 int recId; /* recordId to be returned */
@@ -470,8 +462,7 @@ return(recId);
 
 
 /* terminates an index scan */
-AM_CloseIndexScan(scanDesc)
-int scanDesc;/* scan Descriptor*/
+AM_CloseIndexScan(int scanDesc)
 
 {
 if ((scanDesc < 0) || (scanDesc > MAXSCANS - 1))
@@ -484,8 +475,7 @@ return(AME_OK);
 }
 
 
-GetLeftPageNum(fileDesc)
-int fileDesc;
+GetLeftPageNum(int fileDesc)
 
 {
 char *pageBuf;

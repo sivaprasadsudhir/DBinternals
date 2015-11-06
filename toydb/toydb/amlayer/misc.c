@@ -7,9 +7,7 @@
 pad end of str until up to length bytes with '\0'
 Assume that str is terminated with '\0'
 ***********************************************************/
-padstring(str,length)
-char *str;
-int length;
+padstring(char* str,int length)
 {
 int i;
 
@@ -18,11 +16,7 @@ int i;
 }
 
 
-xAM_CreateIndex(fname,indexno,attrtype,attrlen)
-char *fname;
-int indexno;
-char attrtype;
-int attrlen;
+xAM_CreateIndex(char* fname,int indexno,char attrtype,int attrlen)
 {
 int errval;
 
@@ -34,9 +28,7 @@ int errval;
 	return(errval);
 }
 
-xAM_DestroyIndex(fname,indexno)
-char *fname;
-int indexno;
+xAM_DestroyIndex(char* fname,int indexno)
 {
 int errval;
 
@@ -48,12 +40,7 @@ int errval;
 }
 
 
-xAM_InsertEntry(fd,attrtype,attrlen,val,recid)
-int fd;
-char attrtype;
-int attrlen;
-char *val;
-RecIdType recid;
+xAM_InsertEntry(int fd,char attrtype,int attrlen,char* val,RecIdType recid)
 {
 int errval;
 
@@ -65,12 +52,7 @@ int errval;
 	return(errval);
 }
 
-xAM_DeleteEntry(fd,attrtype,attrlen,val,recid)
-int fd;
-char attrtype;
-int attrlen;
-char *val;
-RecIdType recid;
+xAM_DeleteEntry(int fd,char attrtype,int attrlen,char* val,RecIdType recid)
 {
 int errval;
 
@@ -82,12 +64,7 @@ int errval;
 	return(errval);
 }
 
-xAM_OpenIndexScan(fd,attrtype,attrlen,op,val)
-int fd;
-char attrtype;
-int  op;
-int attrlen;
-char *val;
+xAM_OpenIndexScan(int fd,char attrtype,int attrlen,int op,char* val)
 {
 int sd;
 
@@ -100,8 +77,8 @@ int sd;
 	return(sd);
 }
 
-RecIdType xAM_FindNextEntry(sd)
-int sd;
+RecIdType xAM_FindNextEntry(int sd)
+
 {
 int errval;
 RecIdType recid;
@@ -114,8 +91,8 @@ RecIdType recid;
 	return(recid);
 }
 
-xAM_CloseIndexScan(sd)
-int sd;
+xAM_CloseIndexScan(int sd)
+
 {
 
 int errval;
@@ -127,8 +104,8 @@ int errval;
 	return(errval);
 }
 
-xPF_OpenFile(fname)
-char *fname;
+xPF_OpenFile(char* fname)
+
 {
 int errval;
 
@@ -139,8 +116,8 @@ int errval;
 	return(errval);
 }
 
-xPF_CloseFile(fd)
-int fd;
+xPF_CloseFile(int fd)
+
 {
 int errval;
 

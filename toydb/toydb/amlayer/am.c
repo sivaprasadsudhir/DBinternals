@@ -2,6 +2,25 @@
 # include "am.h"
 # include "pf.h"
 
+/* Fills the header and inserts a key into a new root */
+AM_FillRootPage(char* pageBuf,int pageNum1,int pageNum2,char* value, short attrLength, short maxKeys)
+
+{
+	AM_INTHEADER temphead,*tempheader;
+
+	tempheader = &temphead;
+
+	/* fill the header */
+	tempheader->pageType = 'i';
+	tempheader->attrLength = attrLength;
+	tempheader->maxKeys = maxKeys;
+	tempheader->numKeys = 1;
+	bcopy((char *)&pageNum1,pageBuf + AM_sint ,AM_si);
+	bcopy(value,pageBuf + AM_sint + AM_si ,attrLength);
+	bcopy((char *)&pageNum2,pageBuf + AM_sint + AM_si + attrLength,AM_si);
+	bcopy(tempheader,pageBuf,AM_sint);
+
+}
 
 /* splits a leaf node */
 
@@ -227,35 +246,9 @@ AM_AddtoIntPage(char* pageBuf,char* value,int pageNum,AM_INTHEADER* header, int 
 }
 
 
-/* Fills the header and inserts a key into a new root */
-AM_FillRootPage(char* pageBuf,int pageNum1,int pageNum2,char* value, int attrLength, int maxKeys)
-
-{
-	AM_INTHEADER temphead,*tempheader;
-
-	tempheader = &temphead;
-
-	/* fill the header */
-	tempheader->pageType = 'i';
-	tempheader->attrLength = attrLength;
-	tempheader->maxKeys = maxKeys;
-	tempheader->numKeys = 1;
-	bcopy((char *)&pageNum1,pageBuf + AM_sint ,AM_si);
-	bcopy(value,pageBuf + AM_sint + AM_si ,attrLength);
-	bcopy((char *)&pageNum2,pageBuf + AM_sint + AM_si + attrLength,AM_si);
-	bcopy(tempheader,pageBuf,AM_sint);
-
-}
-
 
 /* Split an internal node */
-AM_SplitIntNode(pageBuf,pbuf1,pbuf2,header,value,pageNum,offset)
-char *pageBuf;/* internal node to be split */
-char *pbuf1,*pbuf2; /* the buffers for the two halves */
-char *value; /*  pointer to key to be added and to be returned to parent*/
-AM_INTHEADER *header;
-int pageNum,offset;
-
+AM_SplitIntNode(char* pageBuf,char* pbuf1,char* pbuf2,AM_INTHEADER* header,char* value,int pageNum,int offset)
 {
 	AM_INTHEADER temphead,*tempheader;
 	int recSize;

@@ -7,9 +7,9 @@ test1.c: tests simple index insertion and scans.
 #include "testam.h"
 #include "pf.h"
 
-#define MAXRECS	600
+#define MAXRECS	300
 #define MAX_FNAME_LENGTH 80	/* max length for file name */
-
+#define SIZE 1000000
 
 main()
 {
@@ -23,14 +23,20 @@ char fnamebuf[MAX_FNAME_LENGTH];	/* file name buffer */
 int recnum;	/* record number */
 int numrec;		/* # of records retrieved*/
 int fileDesc;
-	
+int pages[SIZE];
+int values[SIZE];	
+
 	PF_Init();
 	// create index on the both field of the record
-	
+	int globalindex[1];
 	// open the index 
 	sprintf(fnamebuf,"%s","testrel");
-	AM_Bulkloading(fnamebuf,0,INT_TYPE,sizeof(int),MAXRECS);
+	AM_BulkLoadLeaf(fnamebuf,0,INT_TYPE,sizeof(int),MAXRECS,pages,values,globalindex);
 	printf("Index created! :D\n");
+	int j;
+	for(j=0;j<globalindex[0];j++) {
+		printf("Page:%d value:	%d\n", pages[j], values[j]);
+	}
 	
 
 	
@@ -82,29 +88,5 @@ int fileDesc;
 	PF_CloseFile(id1);
 	AM_DestroyIndex(RELNAME,RECVAL_INDEXNO);
 
-    vector v;
-    vector_init(&v);
-
-    vector_add(&v, "Bonjour");
-    vector_add(&v, "tout");
-    vector_add(&v, "le");
-    vector_add(&v, "monde");
-
-    for (i = 0; i < vector_total(&v); i++)
-        printf("%s ", (char *) vector_get(&v, i));
-    printf("\n");
-
-    vector_delete(&v, 3);
-    vector_delete(&v, 2);
-    vector_delete(&v, 1);
-
-    vector_set(&v, 0, "Hello");
-    vector_add(&v, "World");
-
-    for (i = 0; i < vector_total(&v); i++)
-        printf("%s ", (char *) vector_get(&v, i));
-    printf("\n");
-
-    vector_free(&v);
 }
 

@@ -10,10 +10,12 @@ int main(void)
     vector v;
     vector_init(&v);
 
-    vector_add(&v, "Bonjour");
-    vector_add(&v, "tout");
-    vector_add(&v, "le");
-    vector_add(&v, "monde");
+    // char temp1[20]
+
+    vector_add(&v, 1);
+    vector_add(&v, 2);
+    vector_add(&v, 3);
+    vector_add(&v, 4);
 
     for (i = 0; i < vector_total(&v); i++)
         printf("%s ", (char *) vector_get(&v, i));

@@ -1,12 +1,29 @@
 # include <stdio.h>
 # include "pf.h"
 # include "am.h"
+# include "vector.h"
+
+
 
 # define help(X) printf("Debug %s: %s %d %s\n", (X), __FILE__,__LINE__, __func__)
 
 
-AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS)
+int myAtoi(char *str)
 {
+    int res = 0; // Initialize result
+ 	int i;
+    // Iterate through all characters of input string and update result
+    for (i = 0; str[i] != '\0'; ++i)
+        res = res*10 + str[i] - '0';
+ 
+    // return result.
+    return res;
+}
+
+
+AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex)
+{
+
 	char *pageBuf; /* buffer for holding a page */
 	char indexfName[AM_MAX_FNAME_LENGTH]; /* String to store the indexed
 					 files name with extension           */
@@ -14,10 +31,10 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 	int fileDesc; /* file Descriptor */
 	int errVal;
 	int maxKeys;/* Maximum keys that can be held on one internal page */
-
-	int* pagenNumNextLevel;
-	int* valuesNextLevel;
-
+	// vector_init(&pagenNumNextLevel);
+	// vector_init(&valuesNextLevel);
+	pagenNumNextLevel[0]=97;
+	globalindex[0]=0;
 
 	AM_LEAFHEADER head,*header;
 	int recSize = attrLength + AM_ss;
@@ -67,6 +84,8 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 	for(recNum=0; recNum<MAXRECS; ) {
 
 		//printf("%d\n", recNum);
+		int value = recNum;
+
 
 		if(haveToAllocate ==1 && first==1){
 			first=0;
@@ -75,6 +94,18 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
 			AM_Check;
 			printf("MARKER :%d\n", pageNum);
+			// char temp1[20];
+			// char temp2[20];
+			// sprintf(temp1, "%d", pageNum);
+			// sprintf(temp2, "%d", value);
+			// printf("%s\n",temp1 );
+			pagenNumNextLevel[globalindex[0]]=pageNum;
+			valuesNextLevel[globalindex[0]]=value;
+			globalindex[0]++;
+
+			// vector_add(&pagenNumNextLevel, temp1);
+			// vector_add(&valuesNextLevel, temp2);
+
 			/* initialise the header */
 			header->pageType = 'l';
 			header->nextLeafPage = AM_NULL_PAGE;
@@ -97,7 +128,7 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 			haveToAllocate=0;
 
 		}
-		if(haveToAllocate==1 && first==0){
+		else if(haveToAllocate==1 && first==0){
 
 			first=0;
 			haveToAllocate=0;
@@ -111,7 +142,7 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 			index=1;
 			errVal = PF_AllocPage(fileDesc,&newPageNum,&newPageBuf);
 			AM_Check;
-			
+
 			printf("MARKER old, page:%d, %d\n", pageNum, newPageNum);
 			bcopy(pageBuf,tempheader,AM_sl);
 			tempheader->nextLeafPage = newPageNum;
@@ -122,6 +153,20 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 
 			pageNum = newPageNum;
 			pageBuf = newPageBuf;
+			
+			pagenNumNextLevel[globalindex[0]]=pageNum;
+			valuesNextLevel[globalindex[0]]=value;
+			globalindex[0]++;
+
+			// char temp1[20];
+			// char temp2[20];
+			// sprintf(temp1, "%d", pageNum);
+			// sprintf(temp2, "%d", value);
+			// printf("%d\n",myAtoi(temp1) );
+
+			// vector_add(&pagenNumNextLevel, temp1);
+			// vector_add(&valuesNextLevel, temp2);
+			
 			
 			/* initialise the header */
 			
@@ -146,7 +191,6 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 		}
 
 		
-		int value = recNum;
 
 		if (previousValue == value)
 		/* key is already present */ 
@@ -231,7 +275,8 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 	/* Close the file */
 	errVal = PF_CloseFile(fileDesc);
 	AM_Check;
-	
+
+
 
 	return(AME_OK);
 

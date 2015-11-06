@@ -2,7 +2,236 @@
 # include "pf.h"
 # include "am.h"
 
+# define help(X) printf("Debug %s: %s %d %s\n", (X), __FILE__,__LINE__, __func__)
 
+
+AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS)
+{
+	char *pageBuf; /* buffer for holding a page */
+	char indexfName[AM_MAX_FNAME_LENGTH]; /* String to store the indexed
+					 files name with extension           */
+	int pageNum; /* page number of the root page(also the first page) */
+	int fileDesc; /* file Descriptor */
+	int errVal;
+	int maxKeys;/* Maximum keys that can be held on one internal page */
+
+	AM_LEAFHEADER head,*header;
+	int recSize = attrLength + AM_ss;
+
+	/* Check the parameters */
+	if ((attrType != 'c') && (attrType != 'f') && (attrType != 'i'))
+		{
+		 AM_Errno = AME_INVALIDATTRTYPE;
+		 return(AME_INVALIDATTRTYPE);
+                 }      
+	if ((attrLength < 1) || (attrLength > 255))
+		{
+		 AM_Errno = AME_INVALIDATTRLENGTH;
+		 return(AME_INVALIDATTRLENGTH);
+                }
+	if (attrLength != 4)
+		if (attrType !='c')
+			{
+			 AM_Errno = AME_INVALIDATTRLENGTH;
+			 return(AME_INVALIDATTRLENGTH);
+                        }
+	
+	header = &head;
+	
+	/* Get the filename with extension and create a paged file by that name*/
+	sprintf(indexfName,"%s.%d",fileName,indexNo);
+	errVal = PF_CreateFile(indexfName);
+	AM_Check;
+
+
+	/* open the new file */
+	fileDesc = PF_OpenFile(indexfName);
+	if (fileDesc < 0) 
+	  {
+	   AM_Errno = AME_PF;
+	   	return(AME_PF);
+       }
+
+	/* allocate a new page for the root */
+	
+    
+	int previousValue;
+	int haveToAllocate = 1;
+	int recNum;
+	int index;
+	int first=1;
+	for(recNum=0; recNum<MAXRECS; ) {
+
+		//printf("%d\n", recNum);
+
+		if(haveToAllocate ==1 && first==1){
+			first=0;
+			index=1;
+			previousValue=-1;
+			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
+			AM_Check;
+			printf("MARKER :%d\n", pageNum);
+			/* initialise the header */
+			header->pageType = 'l';
+			header->nextLeafPage = AM_NULL_PAGE;
+			header->recIdPtr = PF_PAGE_SIZE;
+			header->keyPtr = AM_sl;
+			header->freeListPtr = AM_NULL;
+			header->numinfreeList = 0;
+			header->attrLength = attrLength;
+			header->numKeys = 0;
+			/* the maximum keys in an internal node- has to be even always*/
+			maxKeys = (PF_PAGE_SIZE - AM_sint - AM_si)/(AM_si + attrLength);
+			if (( maxKeys % 2) != 0) 
+				header->maxKeys = maxKeys - 1;
+			else 
+				header->maxKeys = maxKeys;
+			/* copy the header onto the page */
+			bcopy(header,pageBuf,AM_sl);
+
+			AM_LeftPageNum = pageNum;
+			haveToAllocate=0;
+
+		}
+		if(haveToAllocate==1 && first==0){
+
+			first=0;
+			haveToAllocate=0;
+			previousValue=-1;
+			// point old guy to new guy, unfix old guy
+			AM_LEAFHEADER temp;
+			AM_LEAFHEADER *tempheader=&temp;
+			
+			int newPageNum;
+			char* newPageBuf;
+			index=1;
+			errVal = PF_AllocPage(fileDesc,&newPageNum,&newPageBuf);
+			AM_Check;
+			
+			printf("MARKER old, page:%d, %d\n", pageNum, newPageNum);
+			bcopy(pageBuf,tempheader,AM_sl);
+			tempheader->nextLeafPage = newPageNum;
+			bcopy(tempheader,pageBuf,AM_sl);
+			
+			errVal = PF_UnfixPage(fileDesc, pageNum, TRUE);
+			AM_Check;
+
+			pageNum = newPageNum;
+			pageBuf = newPageBuf;
+			
+			/* initialise the header */
+			
+			header->pageType = 'l';
+			header->nextLeafPage = AM_NULL_PAGE;
+			header->recIdPtr = PF_PAGE_SIZE;
+			header->keyPtr = AM_sl;
+			header->freeListPtr = AM_NULL;
+			header->numinfreeList = 0;
+			header->attrLength = attrLength;
+			header->numKeys = 0;
+			/* the maximum keys in an internal node- has to be even always*/
+			maxKeys = (PF_PAGE_SIZE - AM_sint - AM_si)/(AM_si + attrLength);
+			if (( maxKeys % 2) != 0) 
+				header->maxKeys = maxKeys - 1;
+			else 
+				header->maxKeys = maxKeys;
+			/* copy the header onto the page */
+
+			bcopy(header,pageBuf,AM_sl);
+			
+		}
+
+		
+		int value = recNum;
+
+		if (previousValue == value)
+		/* key is already present */ 
+		{
+
+			if (header->freeListPtr == 0)
+				if ((header->recIdPtr - header->keyPtr) <(AM_si + AM_ss))
+				{
+					/* no room for one more record */
+					haveToAllocate=1;
+					continue;
+				}
+			/* insert into leaf - no need to split */
+			AM_InsertToLeafFound(pageBuf,recNum,index,header);
+			help("do not happen yet");	
+			bcopy(header,pageBuf,AM_sl);
+			haveToAllocate=0;
+			recNum++;
+			index++;
+			previousValue=value;
+			continue;
+		}
+
+		if ((header->freeListPtr) == 0){
+    
+			/* freelist empty */
+			if ((header->recIdPtr - header->keyPtr) < (AM_si + AM_ss + recSize)){
+				haveToAllocate=1;
+				continue;
+			}
+				
+			else
+			{   
+    			AM_InsertToLeafNotFound(pageBuf,&value,recNum,index,header);
+				header->numKeys++;
+    			bcopy(header,pageBuf,AM_sl);
+				haveToAllocate=0;
+				recNum++;
+				index++;
+				previousValue=value;				
+				continue;
+			}
+		}
+
+		else{ /* no place in the middle */
+			if (((header->numinfreeList)*(AM_si + AM_ss) + header->recIdPtr -  header->keyPtr) > (recSize + AM_si + AM_ss))
+			/*there is enough space in the freelist and in the middle put together */
+			{
+				char tempPage[PF_PAGE_SIZE];
+	
+				/* Compact the freelist so that we get enough space in the middle so that the new key can be inserted */
+				AM_Compact(1,header->numKeys,pageBuf,tempPage,header);
+				
+				printf("We think this should never happen\n");
+
+				bcopy(tempPage,pageBuf,PF_PAGE_SIZE);
+				bcopy(pageBuf,header,AM_sl);
+				/* Insert into leaf a new key - no need to split */
+				AM_InsertToLeafNotFound(pageBuf,&value,recNum,index,header);
+				header->numKeys++;
+				bcopy(header,pageBuf,AM_sl);
+				haveToAllocate=0;
+				recNum++;
+				previousValue=value;
+				continue;
+
+			}
+			else{ /* there is not enough room in the page */
+				haveToAllocate=1;
+				recNum++;
+				index++;
+				previousValue=value;
+			}
+		}
+
+	}
+
+
+	errVal = PF_UnfixPage(fileDesc,pageNum,TRUE);
+	//AM_Check;
+	
+	/* Close the file */
+	errVal = PF_CloseFile(fileDesc);
+	AM_Check;
+	
+
+	return(AME_OK);
+
+}
 
 /* Creates a secondary idex file called fileName.indexNo */
 AM_CreateIndex(fileName,indexNo,attrType,attrLength)

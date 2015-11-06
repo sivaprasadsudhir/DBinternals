@@ -5,17 +5,7 @@
 
 /* splits a leaf node */
 
-AM_SplitLeaf(fileDesc,pageBuf,pageNum,attrLength,recId,value,status,index,key)
-int fileDesc; /* file descriptor */
-char *pageBuf; /* pointer to buffer */
-int *pageNum; /* pagenumber of new leaf created */
-int attrLength; 
-int recId;
-char *value; /* attribute value for insert */
-
-int status; /* Whether key was found or not in the tree */
-int index; /* place where key is to be inserted */
-char *key; /* returns the key to be filled in the parent */
+void AM_SplitLeaf(int fileDesc, char * pageBuf, int* pageNum, int attrLength, int recId, char* value, int status, int index, int key)
 {
 
 	AM_LEAFHEADER head,temphead; /* local header */
@@ -109,12 +99,7 @@ char *key; /* returns the key to be filled in the parent */
 }
 
 /* Adds to the parent(on top of the path stack) attribute value and page Number*/
-AM_AddtoParent(fileDesc,pageNum,value,attrLength)
-int fileDesc;
-int pageNum; /* page Number to be added to parent */
-char *value; /*  pointer to attribute value to be added - 
-                 gives back the attribute value to be added to it's parent*/
-int attrLength;
+AM_AddtoParent(int fileDesc, int pageNum,char* value,int attrLength)
 
 {
 	char tempPage[PF_PAGE_SIZE];/* temporary page for manipulating page */
@@ -215,12 +200,7 @@ int attrLength;
 
 
 /* adds a key to an internal node */
-AM_AddtoIntPage(pageBuf,value,pageNum,header,offset)
-char *pageBuf;
-char *value; /* value to be added to the node */
-int pageNum; /* page number of child to be inserted */
-int offset; /* place where key is to be inserted */
-AM_INTHEADER *header;
+AM_AddtoIntPage(char* pageBuf,char* value,int pageNum,AM_INTHEADER* header, int offset)
 
 {
 	int recSize;
@@ -248,11 +228,7 @@ AM_INTHEADER *header;
 
 
 /* Fills the header and inserts a key into a new root */
-AM_FillRootPage(pageBuf,pageNum1,pageNum2,value,attrLength,maxKeys)
-char *pageBuf;/* buffer to new root */
-int pageNum1,pageNum2;/* pagenumbers of it;s two children*/
-char *value; /* attr value to be inserted */
-short attrLength,maxKeys; /* some info about the header */
+AM_FillRootPage(char* pageBuf,int pageNum1,int pageNum2,char* value, int attrLength, int maxKeys)
 
 {
 	AM_INTHEADER temphead,*tempheader;

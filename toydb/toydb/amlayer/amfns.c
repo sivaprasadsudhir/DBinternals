@@ -15,6 +15,10 @@ AM_Bulkloading(char* fileName,int indexNo,char attrType,int attrLength,int MAXRE
 	int errVal;
 	int maxKeys;/* Maximum keys that can be held on one internal page */
 
+	int* pagenNumNextLevel;
+	int* valuesNextLevel;
+
+
 	AM_LEAFHEADER head,*header;
 	int recSize = attrLength + AM_ss;
 

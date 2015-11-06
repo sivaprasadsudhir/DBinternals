@@ -3,13 +3,7 @@
 # include "pf.h"
 
 /* Inserts a key into a leaf node */
-AM_InsertintoLeaf(pageBuf,attrLength,value,recId,index,status)
-char *pageBuf;/* buffer where the leaf page resides */
-int attrLength;
-char *value;/* attribute value to be inserted*/
-int recId;/* recid of the attribute to be inserted */
-int index;/* index where key is to be inserted */
-int status;/* Whether key is a new key or an old key */
+AM_InsertintoLeaf(char* pageBuf, int attrLength,char* value,int recId,int index,int status)
 
 {
 	int recSize;
@@ -82,11 +76,8 @@ int status;/* Whether key is a new key or an old key */
 
 
 /* Insert into leaf given the fact that the key is old */
-AM_InsertToLeafFound(pageBuf,recId,index,header)
-char *pageBuf;
-int recId;
-int index;
-AM_LEAFHEADER *header;
+AM_InsertToLeafFound(char* pageBuf,int recId,int index,AM_LEAFHEADER* header)
+
 
 {
 	int recSize;
@@ -124,12 +115,7 @@ AM_LEAFHEADER *header;
 
 
 /* Insert to a leaf given that the key is new */
-AM_InsertToLeafNotFound(pageBuf,value,recId,index,header)
-char *pageBuf;
-char *value;
-int recId;
-int index;
-AM_LEAFHEADER *header;
+AM_InsertToLeafNotFound(char* pageBuf,char* value,int recId,int index,AM_LEAFHEADER* header)
 
 {
 	int recSize;
@@ -160,13 +146,7 @@ AM_LEAFHEADER *header;
 /* There may be quite a few entries in the freelist but there may not 
 be space in the middle for a new key. This compacts all the recid's to the right
 so that there is enough space in the middle */
-AM_Compact(low,high,pageBuf,tempPage,header)
-
-int low;
-int high;
-char *pageBuf;
-char *tempPage;
-AM_LEAFHEADER *header;
+AM_Compact(int low,int high,char* pageBuf,char* tempPage,AM_LEAFHEADER* header)
 
 {
 

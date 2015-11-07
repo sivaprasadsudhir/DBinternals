@@ -9,6 +9,7 @@
 
 
 extern int allocsDone;
+extern int AM_RootPageNum;
 
 int myAtoi(char *str)
 {
@@ -241,7 +242,8 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				
 			else
 			{   
-    			AM_InsertToLeafNotFound(pageBuf,&value,recNum,index,header);
+				int value2 = value;
+    			AM_InsertToLeafNotFound(pageBuf,&value2,recNum,index,header);
 				header->numKeys++;
     			bcopy(header,pageBuf,AM_sl);
 				haveToAllocate=0;
@@ -282,8 +284,8 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				previousValue=value;
 			}
 		}
-
 	}
+	
 	if(leafSize[0]==-1)
 		leafSize[0]=MAXRECS;
 
@@ -432,8 +434,8 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 		if(index!=1){
 			//bcopy((char*) &values[recNum], pageBuf + AM_sl + (index-1)*recSize + AM_si, attrLength);
 			//bcopy((char*) &pages[recNum], pageBuf + AM_sl + (index-1)*recSize + attrLength, AM_si);
-			bcopy((char*) &values[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si, attrLength);
-			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si + attrLength, AM_si);
+			bcopy((char*) &values[recNum], pageBuf + AM_sint + (index-2)*recSize + AM_si, attrLength);
+			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (index-2)*recSize + AM_si + attrLength, AM_si);
 			bcopy(pageBuf, header, AM_sint);
 			header->numKeys++;
 			bcopy(header, pageBuf, AM_sint);
@@ -465,7 +467,75 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 
 }
 
-AM_PrintTree()
+AM_PrintTreeBulk(int fileDesc, int attrLength, int pageRoot){
+
+	char* pageBuf;
+	int pageNum = AM_RootPageNum;
+	int errVal = PF_GetThisPage(fileDesc, pageNum, &pageBuf);
+	AM_Check;
+	AM_LEAFHEADER leafhead;
+	AM_INTHEADER inthead;
+	AM_LEAFHEADER *leafheader = &leafhead;
+	AM_INTHEADER *intheader = &inthead;
+	bcopy(pageBuf, leafheader, AM_sl);
+	char c = leafheader->pageType;
+	printf("Node %d: ", pageNum);
+	if(c=='l'){
+		printf("Leaf : Value->Record: ");
+		int num = leafheader->numKeys;
+		int i;
+		for(i=0; i<num; i++){
+			int recSize = attrLength + AM_ss;
+			int offset = AM_sl + recSize*(i);
+			int temp;
+			int temp2;
+			int temp3;
+			bcopy(pageBuf + offset, &temp2, attrLength);
+			bcopy(pageBuf + offset + attrLength, &temp, AM_ss);
+			bcopy(pageBuf + temp, &temp3, attrLength);
+			printf("%d->%d", temp2, temp3);
+			if(i!=num-1) printf(", ");
+		}
+		PF_UnfixPage(fileDesc, pageNum, FALSE);
+		printf("\n");
+		return;
+	}
+	if(c=='i'){
+		printf("Internal: P/V/P/V :");
+		bcopy(pageBuf, intheader, AM_sint);
+		int num=intheader->numKeys;
+		int i;
+		int offset = AM_sint;
+		int temp, temp2;
+		
+
+		bcopy(pageBuf + offset, &temp, AM_si);
+		bcopy(pageBuf + offset + AM_si, &temp2, attrLength);
+		
+		//printf("internal first pointer %d %d\n", temp, temp2);
+		printf("%d ",temp);
+		for(i=1; i<num; i++){
+			int recSize = attrLength + AM_si;
+			offset = AM_sint + AM_si + (i-1)*recSize;
+
+			bcopy(pageBuf + offset, &temp, attrLength);
+			bcopy(pageBuf + offset + attrLength, &temp2, AM_si);
+			printf("%d %d ",temp,temp2);
+		}
+		printf("\n");
+
+
+
+
+	}
+
+
+
+
+	
+	
+	
+}
 
 
 /* Creates a secondary idex file called fileName.indexNo */
@@ -684,11 +754,6 @@ AM_DeleteEntry(int fileDesc,char attrType,int attrLength,char* value,int recId)
 	   return(AME_OK);
           }
 }
-
-
-
-
-
 
 
 

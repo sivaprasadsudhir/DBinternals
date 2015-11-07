@@ -2,7 +2,7 @@ a.out : am.o amfns.o amsearch.o aminsert.o amstack.o amglobals.o ../pflayer/pfla
 	@cc -w -g -O0 am.o amfns.o amsearch.o aminsert.o  amstack.o amglobals.o ../pflayer/pflayer.o test1.o amscan.o amprint.o vector.o 
 
 amlayer.o : am.o amfns.o amsearch.o aminsert.o amstack.o amglobals.o amscan.o amprint.o vector.o
-	ld -r am.o amfns.o amsearch.o aminsert.o  amstack.o amglobals.o amscan.o amprint.o  -o amlayer.o vector.o
+	ld -r -g am.o amfns.o amsearch.o aminsert.o  amstack.o amglobals.o amscan.o amprint.o  -o amlayer.o vector.o
 
 am.o : am.c am.h pf.h
 	@cc -w -g -O0 -c am.c

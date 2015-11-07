@@ -21,19 +21,17 @@ int myAtoi(char *str)
 }
 
 
-AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex, int* leafSize, int earlyExit)
+AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex, int* leafSize, int earlyExit)
 {
 
 	char *pageBuf; /* buffer for holding a page */
 	char indexfName[AM_MAX_FNAME_LENGTH]; /* String to store the indexed
 					 files name with extension           */
 	int pageNum; /* page number of the root page(also the first page) */
-	int fileDesc; /* file Descriptor */
 	int errVal;
 	int maxKeys;/* Maximum keys that can be held on one internal page */
 	// vector_init(&pagenNumNextLevel);
 	// vector_init(&valuesNextLevel);
-	pagenNumNextLevel[0]=97;
 	globalindex[0]=0;
 
 	AM_LEAFHEADER head,*header;
@@ -61,18 +59,10 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 	
 	/* Get the filename with extension and create a paged file by that name*/
 	sprintf(indexfName,"%s.%d",fileName,indexNo);
-	errVal = PF_CreateFile(indexfName);
-	AM_Check;
+	
 
 
-	/* open the new file */
-	fileDesc = PF_OpenFile(indexfName);
-	if (fileDesc < 0) 
-	  {
-	   AM_Errno = AME_PF;
-	   	return(AME_PF);
-       }
-
+	
 	/* allocate a new page for the root */
 	
     
@@ -85,20 +75,16 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 
 		//printf("%d\n", recNum);
 		int value = recNum;
-
-
+		
 		if(haveToAllocate ==1 && first==1){
 			first=0;
 			index=1;
 			previousValue=-1;
 			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
 			AM_Check;
+			if(earlyExit != 1)
 			printf("MARKER :%d\n", pageNum);
-			// char temp1[20];
-			// char temp2[20];
-			// sprintf(temp1, "%d", pageNum);
-			// sprintf(temp2, "%d", value);
-			// printf("%s\n",temp1 );
+			
 			pagenNumNextLevel[globalindex[0]]=pageNum;
 			valuesNextLevel[globalindex[0]]=value;
 			globalindex[0]++;
@@ -122,7 +108,6 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			else 
 				header->maxKeys = maxKeys;
 			/* copy the header onto the page */
-			printf("max keys: %d\n", header->maxKeys);
 			bcopy(header,pageBuf,AM_sl);
 
 			AM_LeftPageNum = pageNum;
@@ -143,7 +128,6 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			if(leafSize[0]==-1){
 				if(earlyExit==1){
 					leafSize[0]=index-1;
-					printf("exiting\n");
 					return (AME_OK);
 				}
 			}
@@ -193,31 +177,35 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			else 
 				header->maxKeys = maxKeys;
 			/* copy the header onto the page */
-			printf("max keys: %d\n", header->maxKeys);
-
+		
 			bcopy(header,pageBuf,AM_sl);
 			
 		}
 
-		int alreadyDone = index-1;
-		int leftInLeaf = leafSize[0]-alreadyDone;
-		int leftInFile = MAXRECS - recNum;
-		if(leftInFile == leafSize[0]/2){
-			if(leftInLeaf < leftInFile){
-				haveToAllocate=1;
-				continue;
-			}
+		if(earlyExit==0){
+			int alreadyDone = index-1;
+			int leftInLeaf = leafSize[0]-alreadyDone;
+			int leftInFile = MAXRECS - recNum;
+			if(leftInFile == (leafSize[0]+1)/2){
+				if(leftInLeaf < leftInFile){
+					haveToAllocate=1;
+					continue;
+				}
 
+			}
 		}
 
-
+		if(index> leafSize[0] && leafSize[0]!=-1){
+			haveToAllocate=1;
+			continue;
+		}
 
 		if (previousValue == value)
 		/* key is already present */ 
 		{
 
 			if (header->freeListPtr == 0)
-				if ((header->recIdPtr - header->keyPtr) <(AM_si + AM_ss))
+				if ((header->recIdPtr - header->keyPtr) <(AM_si + AM_ss) || index>=leafSize[0] && leafSize[0]!=-1)
 				{
 					/* no room for one more record */
 					haveToAllocate=1;
@@ -230,6 +218,7 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			haveToAllocate=0;
 			recNum++;
 			index++;
+
 			previousValue=value;
 			continue;
 		}
@@ -264,7 +253,7 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 				/* Compact the freelist so that we get enough space in the middle so that the new key can be inserted */
 				AM_Compact(1,header->numKeys,pageBuf,tempPage,header);
 				
-				printf("We think this should never happen\n");
+				help("We think this should never happen\n");
 
 				bcopy(tempPage,pageBuf,PF_PAGE_SIZE);
 				bcopy(pageBuf,header,AM_sl);
@@ -287,7 +276,8 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 		}
 
 	}
-
+	if(leafSize[0]==-1)
+		leafSize[0]=MAXRECS;
 
 	errVal = PF_UnfixPage(fileDesc,pageNum,TRUE);
 	//AM_Check;
@@ -297,6 +287,164 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 	AM_Check;
 
 
+
+	return(AME_OK);
+
+}
+
+
+AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int attrLength,int* pages, int* values, int* newPages, int* newValues, int* globalindex, int* leafSize, int earlyExit)
+{
+
+	char *pageBuf; /* buffer for holding a page */
+	char indexfName[AM_MAX_FNAME_LENGTH]; /* String to store the indexed
+					 files name with extension           */
+	int pageNum=-1; /* page number of the root page(also the first page) */
+	int errVal;
+	int maxKeys;/* Maximum keys that can be held on one internal page */
+	// vector_init(&pagenNumNextLevel);
+	// vector_init(&valuesNextLevel);
+	
+	maxKeys = (PF_PAGE_SIZE - AM_sint - AM_si)/(AM_si + attrLength);
+	if (( maxKeys % 2) != 0) 
+		maxKeys--;
+	
+
+	int numLeaves = globalindex[0];
+	globalindex[0]=0;
+
+	AM_INTHEADER head,*header;
+	int recSize = attrLength + AM_si;
+
+
+
+	/* Check the parameters */
+	if ((attrType != 'c') && (attrType != 'f') && (attrType != 'i'))
+		{
+		 AM_Errno = AME_INVALIDATTRTYPE;
+		 return(AME_INVALIDATTRTYPE);
+                 }      
+	if ((attrLength < 1) || (attrLength > 255))
+		{
+		 AM_Errno = AME_INVALIDATTRLENGTH;
+		 return(AME_INVALIDATTRLENGTH);
+                }
+	if (attrLength != 4)
+		if (attrType !='c')
+			{
+			 AM_Errno = AME_INVALIDATTRLENGTH;
+			 return(AME_INVALIDATTRLENGTH);
+                        }
+	
+	header = &head;
+	
+
+	
+	/* open the new file */
+	
+	/* allocate a new page for the root */
+	
+    
+	int haveToAllocate = 1;
+	int recNum;
+	int index;
+	int first=1;
+	//printf("Numleaves %d\n", numLeaves);	
+	for(recNum=0; recNum<numLeaves; ) {
+
+		//printf("Recnum: %d\n", recNum);
+		int value = values[recNum];
+		int page = pages[recNum];
+
+		if(haveToAllocate==1 && first!=1){
+			if(leafSize[0]==-1){
+				if(earlyExit==1){
+					leafSize[0]=index-1;
+					printf("exiting\n");
+					return (AME_OK);
+				}
+			}
+		}
+		
+
+		if(haveToAllocate==1){
+			//printf("having to allocate\n");
+			first=0;
+			index=1;
+
+			if(pageNum<0)
+				PF_UnfixPage(fileDesc, pageNum, TRUE);
+
+			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
+			AM_Check;
+			//help("alloced");
+			printf("MARKER :%d\n", pageNum);
+			
+		
+			newPages[globalindex[0]]=pageNum;
+			newValues[globalindex[0]]=value;
+			globalindex[0]++;
+
+			// vector_add(&pagenNumNextLevel, temp1);
+			// vector_add(&valuesNextLevel, temp2);
+
+			/* initialise the header */
+			header->pageType = 'i';
+			header->numKeys=0;
+			header->maxKeys=maxKeys;
+			header->attrLength=attrLength;
+
+			/* copy the header onto the page */
+			bcopy(header,pageBuf,AM_sint);
+
+			haveToAllocate=0;
+
+		}
+		
+		if(earlyExit==0){
+			int alreadyDone = index-1;
+			int leftInLeaf = leafSize[0]-alreadyDone;
+			int leftInFile = numLeaves - recNum;
+			if(leftInFile == (leafSize[0]+1)/2){
+				if(leftInLeaf < leftInFile){
+					haveToAllocate=1;
+					continue;
+				}
+			}
+		}
+
+		if(header->numKeys >= header->maxKeys || index>=leafSize[0]&&leafSize[0]!=-1){
+			haveToAllocate=1;
+			continue;
+		}
+
+		if(index!=1){
+			bcopy((char*) &values[recNum], pageBuf + AM_sint + (recNum-1)*recSize + AM_si, attrLength);
+			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (recNum-1)*recSize + attrLength, AM_si);
+			bcopy(pageBuf, header, AM_sint);
+			header->numKeys++;
+			bcopy(header, pageBuf, AM_sint);
+
+		}
+		if(index==1){
+			bcopy((char*) &pages[recNum], pageBuf + AM_sint, AM_si);
+			bcopy(pageBuf, header, AM_sint);
+			header->numKeys++;
+			bcopy(header, pageBuf, AM_sint);
+		}
+		index++;
+		recNum++;
+
+	}
+	if(leafSize[0]==-1)
+		leafSize[0]=numLeaves;
+
+	errVal = PF_UnfixPage(fileDesc,pageNum,TRUE);
+	//AM_Check;
+	
+	/* Close the file */
+	errVal = PF_CloseFile(fileDesc);
+	AM_Check;
 
 	return(AME_OK);
 

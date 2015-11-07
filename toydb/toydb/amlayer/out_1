@@ -1,0 +1,38 @@
+Time = 1.73ms
+Time for loading = 0.13
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+1.87ms	1	0	1	1	84		84
+retrieved 10 records
+closing down
+Time = 1.97ms
+Time for loading = 0.25
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+2.22ms	2	2	3	2	1068		656
+retrieved 100 records
+closing down
+Time = 2.10ms
+Time for loading = 0.46
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+2.56ms	2	13	14	13	6854		6320
+retrieved 1000 records
+closing down
+Time = 6.58ms
+Time for loading = 2.64
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+9.22ms	2	121	122	121	63662		62912
+retrieved 10000 records
+closing down
+Time = 61.85ms
+exiting
+Time for loading = 25.26
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+87.10ms	3	1215	1216	1205	634730		629008
+retrieved 100000 records
+closing down
+Time = 510.94ms
+exiting
+Time for loading = 253.77
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+764.70ms	3	12145	12146	12049	6340018		6289952
+retrieved 1000000 records
+closing down

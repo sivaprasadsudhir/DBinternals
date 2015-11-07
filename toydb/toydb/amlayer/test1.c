@@ -20,7 +20,7 @@ extern AM_RootPageNum;
 
 main()
 {
-	system("bash ../data/run.sh 100000");
+	system("bash ../data/run.sh 10");
 	double totalTime = 0;
 
 	struct timeval tim;
@@ -200,7 +200,7 @@ int newValues[SIZE];
 	totalTime += t4 - t3;
 
 
-	int internalSize = (allocsDone-numberOfLeaves)*(AM_sint + AM_si + (AM_si + sizeof(int)*internalSizeNumber));
+	int internalSize = (allocsDone-numberOfLeaves)*(AM_sint + AM_si + (AM_si + sizeof(int))*internalSizeNumber);
 	int leafSizeData = (numberOfLeaves)*(AM_sl + (AM_ss + sizeof(int))*leafSizeNumber);
 	int totalSize = internalSize + leafSizeData;
 	printf("Time\t#Levels\tRootID\t#Nodes\t#LeafNodes\tSpaceAlloc\tSpaceUsed\n");

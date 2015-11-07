@@ -1,0 +1,6 @@
+Time = 1.97ms
+Time for loading = 0.25
+msTime	#Levels	RootID	#Nodes	#LeafNodes	SpaceAlloc	SpaceUsed
+2.22ms	2	2	3	2	1068		656
+retrieved 100 records
+closing down

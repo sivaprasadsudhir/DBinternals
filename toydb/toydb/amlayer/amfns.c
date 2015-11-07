@@ -21,7 +21,7 @@ int myAtoi(char *str)
 }
 
 
-AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex)
+AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex, int* leafSize, int earlyExit)
 {
 
 	char *pageBuf; /* buffer for holding a page */
@@ -122,6 +122,7 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			else 
 				header->maxKeys = maxKeys;
 			/* copy the header onto the page */
+			printf("max keys: %d\n", header->maxKeys);
 			bcopy(header,pageBuf,AM_sl);
 
 			AM_LeftPageNum = pageNum;
@@ -139,6 +140,13 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			
 			int newPageNum;
 			char* newPageBuf;
+			if(leafSize[0]==-1){
+				if(earlyExit==1){
+					leafSize[0]=index-1;
+					printf("exiting\n");
+					return (AME_OK);
+				}
+			}
 			index=1;
 			errVal = PF_AllocPage(fileDesc,&newPageNum,&newPageBuf);
 			AM_Check;
@@ -185,12 +193,24 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 			else 
 				header->maxKeys = maxKeys;
 			/* copy the header onto the page */
+			printf("max keys: %d\n", header->maxKeys);
 
 			bcopy(header,pageBuf,AM_sl);
 			
 		}
 
-		
+		int alreadyDone = index-1;
+		int leftInLeaf = leafSize[0]-alreadyDone;
+		int leftInFile = MAXRECS - recNum;
+		if(leftInFile == leafSize[0]/2){
+			if(leftInLeaf < leftInFile){
+				haveToAllocate=1;
+				continue;
+			}
+
+		}
+
+
 
 		if (previousValue == value)
 		/* key is already present */ 
@@ -281,6 +301,8 @@ AM_BulkLoadLeaf(char* fileName,int indexNo,char attrType,int attrLength,int MAXR
 	return(AME_OK);
 
 }
+
+
 
 /* Creates a secondary idex file called fileName.indexNo */
 AM_CreateIndex(char* fileName,int indexNo,char attrType,int attrLength)

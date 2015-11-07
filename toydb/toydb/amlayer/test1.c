@@ -7,7 +7,7 @@ test1.c: tests simple index insertion and scans.
 #include "testam.h"
 #include "pf.h"
 
-#define MAXRECS	300
+#define MAXRECS	100
 #define MAX_FNAME_LENGTH 80	/* max length for file name */
 #define SIZE 1000000
 
@@ -20,6 +20,7 @@ int i;
 RecIdType recid;	/* record id */
 char buf[NAMELENGTH]; /* buffer to store chars */
 char fnamebuf[MAX_FNAME_LENGTH];	/* file name buffer */
+char fnamebuf2[MAX_FNAME_LENGTH];
 int recnum;	/* record number */
 int numrec;		/* # of records retrieved*/
 int fileDesc;
@@ -29,10 +30,18 @@ int values[SIZE];
 	PF_Init();
 	// create index on the both field of the record
 	int globalindex[1];
+	int leafSize[1];
+	leafSize[0]=-1;
+	int earlyExit=1;
 	// open the index 
-	sprintf(fnamebuf,"%s","testrel");
-	AM_BulkLoadLeaf(fnamebuf,0,INT_TYPE,sizeof(int),MAXRECS,pages,values,globalindex);
-	printf("Index created! :D\n");
+	sprintf(fnamebuf2,"%s","testrelleaf");
+	sprintf(fnamebuf, "%s", "testrel");
+	AM_BulkLoadLeaf(fnamebuf2,0,INT_TYPE,sizeof(int),MAXRECS,pages,values,globalindex, leafSize, earlyExit);
+	earlyExit=0;
+	int actualLeafSize = leafSize[0];
+	AM_BulkLoadLeaf(fnamebuf, 0, INT_TYPE, sizeof(int), MAXRECS, pages, values, globalindex, leafSize, earlyExit);
+
+	printf("Leaf size %d\n", leafSize[0]);
 	int j;
 	for(j=0;j<globalindex[0];j++) {
 		printf("Page:%d value:	%d\n", pages[j], values[j]);
@@ -50,7 +59,6 @@ int values[SIZE];
 	   	return(AME_PF);
        }
 
-    printf("HAHHA %d %d\n", fileDesc, id1);	
 
     char pageBuf[PF_PAGE_SIZE];
 

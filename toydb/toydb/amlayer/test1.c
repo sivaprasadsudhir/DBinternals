@@ -11,8 +11,13 @@ test1.c: tests simple index insertion and scans.
 #define MAX_FNAME_LENGTH 80	/* max length for file name */
 #define SIZE 10000
 
+
+int allocsDone;
+extern AM_RootPageNum;
+
 main()
 {
+allocsDone=0;
 int id0,id1; /* index descriptor */
 char ch;
 int sd0,sd1; /* scan descriptors */
@@ -53,7 +58,11 @@ int newValues[SIZE];
 	PF_CloseFile(fileDesc2);
 
 	int actualLeafSize = leafSize[0];
-	leafSize[0]=7;
+	
+
+	leafSize[0]=7;                      // CHANGE THIS TO CHANGE LEAF SIZE
+	
+
 	errVal = PF_CreateFile(fnamebuf);
 	AM_Check;
 
@@ -89,9 +98,14 @@ int newValues[SIZE];
 
 
 	AM_BulkLoadInternal(fileDesc2, fnamebuf2,0,INT_TYPE,sizeof(int),pages,values, newPages, newValues, globalindex, leafSize, earlyExit=1);
+	
+
+	leafSize[0]=6; // 				CHANGE THIS TO CHANGE INTERNAL SIZE
+	
+
 	printf("Number of pointers from an internal node : %d\n", leafSize[0]);
 	printf("\n*******************\n");
-	leafSize[0]=6;
+	
 	actualLeafSize=leafSize[0];
 	PF_CloseFile(fileDesc2);
 	
@@ -123,14 +137,18 @@ int newValues[SIZE];
 			break;
 		}
 	}
-
+	allocsDone-=2;
+	printf("Root id %d\n", AM_RootPageNum);
+	printf("Total number of nodes = %d\n", allocsDone);
+	printf("Total space allocated in bytes = %d\n", PF_PAGE_SIZE*allocsDone);
+	printf("Total amount of space used = %d\n", sizeof(int)*MAXRECS);
 	int h=100;
 	fileDesc=PF_OpenFile(fnamebuf);
 	if(fileDesc<0){
 		printf("cannot open final\n");
 	}
-	errVal = AM_InsertEntry(fileDesc, INT_TYPE, sizeof(int), (char*)&h, 100);
-	printf("errVal %d\n", errVal);
+	//errVal = AM_InsertEntry(fileDesc, INT_TYPE, sizeof(int), (char*)&h, 100);
+	//printf("errVal %d\n", errVal);
 
 
 

@@ -8,6 +8,8 @@
 # define help(X) printf("Debug %s: %s %d %s\n", (X), __FILE__,__LINE__, __func__)
 
 
+extern int allocsDone;
+
 int myAtoi(char *str)
 {
     int res = 0; // Initialize result
@@ -82,8 +84,11 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 			previousValue=-1;
 			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
 			AM_Check;
-			if(earlyExit != 1)
-			printf("MARKER :%d\n", pageNum);
+			allocsDone++;
+			
+
+			//if(earlyExit != 1)
+			//printf("MARKER :%d\n", pageNum);
 			
 			pagenNumNextLevel[globalindex[0]]=pageNum;
 			valuesNextLevel[globalindex[0]]=value;
@@ -132,10 +137,13 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				}
 			}
 			index=1;
-			errVal = PF_AllocPage(fileDesc,&newPageNum,&newPageBuf);
-			AM_Check;
 
-			printf("MARKER old, page:%d, %d\n", pageNum, newPageNum);
+			errVal = PF_AllocPage(fileDesc,&newPageNum,&newPageBuf);
+
+			AM_Check;
+			allocsDone++;
+
+			//printf("MARKER old, page:%d, %d\n", pageNum, newPageNum);
 			bcopy(pageBuf,tempheader,AM_sl);
 			tempheader->nextLeafPage = newPageNum;
 			bcopy(tempheader,pageBuf,AM_sl);
@@ -372,13 +380,15 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 			first=0;
 			index=1;
 
-			if(pageNum<0)
+			if(pageNum>0)
 				PF_UnfixPage(fileDesc, pageNum, TRUE);
-
 			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
+			
 			AM_Check;
+			allocsDone++;
 			//help("alloced");
-			printf("MARKER :%d\n", pageNum);
+			
+			//printf("MARKER :%d\n", pageNum);
 			
 		
 			newPages[globalindex[0]]=pageNum;
@@ -398,6 +408,7 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 			bcopy(header,pageBuf,AM_sint);
 
 			haveToAllocate=0;
+			
 
 		}
 		
@@ -419,8 +430,10 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 		}
 
 		if(index!=1){
-			bcopy((char*) &values[recNum], pageBuf + AM_sint + (recNum-1)*recSize + AM_si, attrLength);
-			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (recNum-1)*recSize + attrLength, AM_si);
+			//bcopy((char*) &values[recNum], pageBuf + AM_sl + (index-1)*recSize + AM_si, attrLength);
+			//bcopy((char*) &pages[recNum], pageBuf + AM_sl + (index-1)*recSize + attrLength, AM_si);
+			bcopy((char*) &values[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si, attrLength);
+			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si + attrLength, AM_si);
 			bcopy(pageBuf, header, AM_sint);
 			header->numKeys++;
 			bcopy(header, pageBuf, AM_sint);
@@ -428,6 +441,8 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 		}
 		if(index==1){
 			bcopy((char*) &pages[recNum], pageBuf + AM_sint, AM_si);
+			//bcopy((char*) &pages[recNum], pageBuf + AM_sl, AM_si);
+
 			bcopy(pageBuf, header, AM_sint);
 			header->numKeys++;
 			bcopy(header, pageBuf, AM_sint);
@@ -450,6 +465,7 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 
 }
 
+AM_PrintTree()
 
 
 /* Creates a secondary idex file called fileName.indexNo */
@@ -502,7 +518,7 @@ AM_CreateIndex(char* fileName,int indexNo,char attrType,int attrLength)
 	/* allocate a new page for the root */
 	errVal = PF_AllocPage(fileDesc,&pageNum,&pageBuf);
 	AM_Check;
-	
+	allocsDone++;
 	/* initialise the header */
 	header->pageType = 'l';
 	header->nextLeafPage = AM_NULL_PAGE;

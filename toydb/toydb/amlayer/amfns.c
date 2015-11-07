@@ -413,7 +413,7 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 			}
 		}
 
-		if(header->numKeys >= header->maxKeys || index>=leafSize[0]&&leafSize[0]!=-1){
+		if(header->numKeys >= header->maxKeys || index>leafSize[0]&&leafSize[0]!=-1){
 			haveToAllocate=1;
 			continue;
 		}

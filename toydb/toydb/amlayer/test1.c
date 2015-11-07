@@ -7,7 +7,7 @@ test1.c: tests simple index insertion and scans.
 #include "testam.h"
 #include "pf.h"
 
-#define MAXRECS	32000
+#define MAXRECS	50
 #define MAX_FNAME_LENGTH 80	/* max length for file name */
 #define SIZE 10000
 
@@ -53,7 +53,7 @@ int newValues[SIZE];
 	PF_CloseFile(fileDesc2);
 
 	int actualLeafSize = leafSize[0];
-	leafSize[0]=leafSize[0];
+	leafSize[0]=7;
 	errVal = PF_CreateFile(fnamebuf);
 	AM_Check;
 
@@ -73,39 +73,41 @@ int newValues[SIZE];
 	int actualNumLeaves = globalindex[0];
 	printf("\n*******************\n");
 
+	sprintf(fnamebuf2, "%s", "testrelinternal.temp");
+		
+		
+	errVal = PF_CreateFile(fnamebuf2);
+	AM_Check;
+
+	fileDesc2=PF_OpenFile(fnamebuf2);
+	if(fileDesc2<0){
+		printf("internals temp not opened\n");
+		return;
+	}
+	earlyExit=1;
+	leafSize[0]=-1;
 
 
+	AM_BulkLoadInternal(fileDesc2, fnamebuf2,0,INT_TYPE,sizeof(int),pages,values, newPages, newValues, globalindex, leafSize, earlyExit=1);
+	printf("Number of pointers from an internal node : %d\n", leafSize[0]);
+	printf("\n*******************\n");
+	leafSize[0]=6;
+	actualLeafSize=leafSize[0];
+	PF_CloseFile(fileDesc2);
+	
 
-	int iter=0;
+
+	int iter=1;
 	while(1){
 		iter++;
-		sprintf(fnamebuf2, "%s.%d", "testrelinternal.temp", iter);
 		
-		
-		errVal = PF_CreateFile(fnamebuf2);
-		AM_Check;
-
-		fileDesc2=PF_OpenFile(fnamebuf2);
-		if(fileDesc2<0){
-			printf("internals temp not opened\n");
-			return;
-		}
-		earlyExit=1;
-		leafSize[0]=-1;
-
-
-		AM_BulkLoadInternal(fileDesc2, fnamebuf2,0,INT_TYPE,sizeof(int),pages,values, newPages, newValues, globalindex, leafSize, earlyExit=1);
-		printf("Number of pointers from a node on level 2: %d\n", leafSize[0]);
-		printf("\n*******************\n");
-
-		PF_CloseFile(fileDesc2);
+		globalindex[0]=actualNumLeaves;
 		fileDesc=PF_OpenFile(fnamebuf);
 
-		globalindex[0]=actualNumLeaves;
 		AM_BulkLoadInternal(fileDesc, fnamebuf, 0, INT_TYPE, sizeof(int), pages, values, newPages, newValues, globalindex, leafSize, earlyExit=0);
 		PF_CloseFile(fileDesc);
-		printf("Number of nodes on level 2 : %d\n", globalindex[0]);
-
+		printf("Number of nodes on level %d : %d\n", iter, globalindex[0]);
+		actualNumLeaves=globalindex[0];
 		for(i=0; i<SIZE; i++){
 			pages[i]=newPages[i];
 			values[i]=newValues[i];
@@ -114,14 +116,21 @@ int newValues[SIZE];
 		for(j=0;j<globalindex[0];j++) {
 			printf("Page:%d value:	%d\n", pages[j], values[j]);
 		}
+		printf("\n*******************\n");
+
 		if(globalindex[0]==1){
 			AM_RootPageNum=pages[0];
 			break;
 		}
 	}
 
-
-
+	int h=100;
+	fileDesc=PF_OpenFile(fnamebuf);
+	if(fileDesc<0){
+		printf("cannot open final\n");
+	}
+	errVal = AM_InsertEntry(fileDesc, INT_TYPE, sizeof(int), (char*)&h, 100);
+	printf("errVal %d\n", errVal);
 
 
 

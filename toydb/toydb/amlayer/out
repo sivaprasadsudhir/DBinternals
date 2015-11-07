@@ -1,0 +1,44 @@
+7
+Total amount of space used = 8
+5
+4
+0 sjdnfkjsd
+2
+
+
+3
+9
+Leaf size 500
+Total space allocated in bytes = 2040
+*******************
+*******************
+*******************
+4
+retrieved 10 records
+7
+8
+closing down
+*******************
+8
+
+0
+Total number of nodes = 2
+Root id 1
+Number of nodes on level 2 : 1
+6
+0
+Page:1 value:	0
+
+6
+
+5
+9
+retrieving recid's from scan descriptor 0
+1
+Number of pointers from an internal node : 1
+3
+Page:0 value:	0
+*******************
+2
+1
+0 sjdnfkjsd

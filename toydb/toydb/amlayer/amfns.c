@@ -9,6 +9,7 @@
 
 
 extern int allocsDone;
+extern int sizeallocated;
 
 int myAtoi(char *str)
 {
@@ -23,7 +24,7 @@ int myAtoi(char *str)
 }
 
 
-AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex, int* leafSize, int earlyExit)
+AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrLength,int MAXRECS, int* pagenNumNextLevel, int* valuesNextLevel, int* globalindex, int* leafSize, int earlyExit, char *readFilename)
 {
 
 	char *pageBuf; /* buffer for holding a page */
@@ -35,7 +36,6 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 	// vector_init(&pagenNumNextLevel);
 	// vector_init(&valuesNextLevel);
 	globalindex[0]=0;
-
 	AM_LEAFHEADER head,*header;
 	int recSize = attrLength + AM_ss;
 
@@ -70,12 +70,18 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
     
 	int previousValue;
 	int haveToAllocate = 1;
-	int recNum;
+	// int recNum;
 	int index;
 	int first=1;
-	for(recNum=0; recNum<MAXRECS; ) {
 
-		//printf("%d\n", recNum);
+	FILE* file = fopen(readFilename, "r");
+	int recNum = 0;
+	fscanf(file, "%d", &recNum);
+
+	// for(recNum=0; recNum<MAXRECS; ) {
+	while (!feof (file))
+	{
+		// printf("%d\n", recNum);
 		int value = recNum;
 		
 		if(haveToAllocate ==1 && first==1){
@@ -114,6 +120,7 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				header->maxKeys = maxKeys;
 			/* copy the header onto the page */
 			bcopy(header,pageBuf,AM_sl);
+			// sizeallocated=sizeallocated+AM_sl;
 
 			AM_LeftPageNum = pageNum;
 			haveToAllocate=0;
@@ -148,6 +155,11 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 			tempheader->nextLeafPage = newPageNum;
 			bcopy(tempheader,pageBuf,AM_sl);
 			
+			// sizeallocated=sizeallocated+()AM_ss+attrLength;	
+			AM_LEAFHEADER thead1,*theader1;
+			theader1=&thead1;
+			bcopy(pageBuf,theader1,AM_sl);
+			sizeallocated=sizeallocated+(theader1->numKeys)*(AM_ss+attrLength) + AM_sl;		
 			errVal = PF_UnfixPage(fileDesc, pageNum, TRUE);
 			AM_Check;
 
@@ -221,10 +233,13 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				}
 			/* insert into leaf - no need to split */
 			AM_InsertToLeafFound(pageBuf,recNum,index,header);
+			// sizeallocated=sizeallocated+AM_ss+attrLength;
 			help("do not happen yet");	
 			bcopy(header,pageBuf,AM_sl);
 			haveToAllocate=0;
-			recNum++;
+			// recNum++;
+
+		fscanf (file, "%d", &recNum);  
 			index++;
 
 			previousValue=value;
@@ -242,10 +257,13 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 			else
 			{   
     			AM_InsertToLeafNotFound(pageBuf,&value,recNum,index,header);
+				// sizeallocated=sizeallocated+AM_ss+attrLength;
 				header->numKeys++;
     			bcopy(header,pageBuf,AM_sl);
 				haveToAllocate=0;
-				recNum++;
+				// recNum++;
+
+		fscanf (file, "%d", &recNum);  
 				index++;
 				previousValue=value;				
 				continue;
@@ -267,33 +285,41 @@ AM_BulkLoadLeaf(int fileDesc, char* fileName,int indexNo,char attrType,int attrL
 				bcopy(pageBuf,header,AM_sl);
 				/* Insert into leaf a new key - no need to split */
 				AM_InsertToLeafNotFound(pageBuf,&value,recNum,index,header);
+				// sizeallocated=sizeallocated+AM_ss+attrLength;
 				header->numKeys++;
 				bcopy(header,pageBuf,AM_sl);
 				haveToAllocate=0;
-				recNum++;
+				// recNum++;
+		fscanf (file, "%d", &recNum);  
 				previousValue=value;
 				continue;
 
 			}
 			else{ /* there is not enough room in the page */
 				haveToAllocate=1;
-				recNum++;
+				// recNum++;
+		fscanf (file, "%d", &recNum);  
 				index++;
 				previousValue=value;
 			}
 		}
 
+
 	}
 	if(leafSize[0]==-1)
 		leafSize[0]=MAXRECS;
 
+	AM_LEAFHEADER thead,*theader;
+	theader=&thead;
+	bcopy(pageBuf,theader,AM_sl);
+	sizeallocated=sizeallocated+(theader->numKeys)*(AM_ss+attrLength) + AM_sl;
 	errVal = PF_UnfixPage(fileDesc,pageNum,TRUE);
 	//AM_Check;
 	
 	/* Close the file */
 	errVal = PF_CloseFile(fileDesc);
 	AM_Check;
-
+  	fclose(file);        
 
 
 	return(AME_OK);
@@ -380,8 +406,13 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 			first=0;
 			index=1;
 
-			if(pageNum>0)
+			if(pageNum>0) {
+				AM_LEAFHEADER thead,*theader;
+				theader=&thead;
+				bcopy(pageBuf,theader,AM_sl);
+				sizeallocated=sizeallocated+(theader->numKeys)*(AM_si+attrLength) + AM_sint;
 				PF_UnfixPage(fileDesc, pageNum, TRUE);
+			}
 			errVal = PF_AllocPage(fileDesc, &pageNum, &pageBuf);
 			
 			AM_Check;
@@ -434,26 +465,33 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 			//bcopy((char*) &pages[recNum], pageBuf + AM_sl + (index-1)*recSize + attrLength, AM_si);
 			bcopy((char*) &values[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si, attrLength);
 			bcopy((char*) &pages[recNum], pageBuf + AM_sint + (index-1)*recSize + AM_si + attrLength, AM_si);
+			// sizeallocated=sizeallocated+AM_si+attrLength;
 			bcopy(pageBuf, header, AM_sint);
 			header->numKeys++;
 			bcopy(header, pageBuf, AM_sint);
+
 
 		}
 		if(index==1){
 			bcopy((char*) &pages[recNum], pageBuf + AM_sint, AM_si);
 			//bcopy((char*) &pages[recNum], pageBuf + AM_sl, AM_si);
+			// sizeallocated=sizeallocated+AM_si;
 
 			bcopy(pageBuf, header, AM_sint);
 			header->numKeys++;
 			bcopy(header, pageBuf, AM_sint);
+
 		}
 		index++;
 		recNum++;
-
 	}
 	if(leafSize[0]==-1)
 		leafSize[0]=numLeaves;
 
+	AM_LEAFHEADER thead1,*theader1;
+	theader1=&thead1;
+	bcopy(pageBuf,theader1,AM_sl);
+	sizeallocated=sizeallocated+(theader1->numKeys)*(AM_si+attrLength) + AM_sint;
 	errVal = PF_UnfixPage(fileDesc,pageNum,TRUE);
 	//AM_Check;
 	
@@ -464,8 +502,6 @@ AM_BulkLoadInternal(int fileDesc, char* fileName,int indexNo,char attrType,int a
 	return(AME_OK);
 
 }
-
-AM_PrintTree()
 
 
 /* Creates a secondary idex file called fileName.indexNo */
